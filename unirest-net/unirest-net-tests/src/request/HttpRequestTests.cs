@@ -1,18 +1,11 @@
-﻿using System;
+﻿using FluentAssertions;
+using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NUnit;
-using NUnit.Framework;
-using FluentAssertions;
-
-using unirest_net;
-using unirest_net.http;
-using unirest_net.request;
-
 using System.Net.Http;
+using System.Threading.Tasks;
+using unirest_net.request;
 
 namespace unicorn_net_tests.request
 {
@@ -108,7 +101,7 @@ namespace unicorn_net_tests.request
             var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost");
             var Put = new HttpRequest(HttpMethod.Put, "http://localhost");
 
-            Get.Headers.Should().NotBeNull();
+            Get.URL.OriginalString.Should().NotBeNull();
             Post.URL.OriginalString.Should().NotBeNull();
             Delete.URL.OriginalString.Should().NotBeNull();
             Patch.URL.OriginalString.Should().NotBeNull();
@@ -493,8 +486,8 @@ namespace unicorn_net_tests.request
             var Get = new HttpRequest(HttpMethod.Get, "http://localhost");
             Action addStringField = () => Get.field("name", "value");
             Action addKeyField = () => Get.field(new MemoryStream());
-            Action addStringFields = () => Get.fields(new Dictionary<string, object> {{"name", "value"}});
-            Action addKeyFields = () => Get.fields(new Dictionary<string, object> {{"key", new MemoryStream()}});
+            Action addStringFields = () => Get.fields(new Dictionary<string, object> { { "name", "value" } });
+            Action addKeyFields = () => Get.fields(new Dictionary<string, object> { { "key", new MemoryStream() } });
 
             addStringField.ShouldThrow<InvalidOperationException>();
             addKeyField.ShouldThrow<InvalidOperationException>();
@@ -507,7 +500,7 @@ namespace unicorn_net_tests.request
         {
             var Get = new HttpRequest(HttpMethod.Get, "http://localhost");
             Action addStringBody = () => Get.body("string");
-            Action addJSONBody = () => Get.body(new List<int> {1,2,3});
+            Action addJSONBody = () => Get.body(new List<int> { 1, 2, 3 });
 
             addStringBody.ShouldThrow<InvalidOperationException>();
             addJSONBody.ShouldThrow<InvalidOperationException>();
@@ -570,10 +563,10 @@ namespace unicorn_net_tests.request
             Action addStreamFieldDelete = () => Delete.field(stream);
             Action addStreamFieldPatch = () => Patch.field(stream);
             Action addStreamFieldPut = () => Put.field(stream);
-            Action addFieldsPost = () => Post.fields(new Dictionary<string, object> {{"test", "test"}});
-            Action addFieldsDelete = () => Delete.fields(new Dictionary<string, object> {{"test", "test"}});
-            Action addFieldsPatch = () => Patch.fields(new Dictionary<string, object> {{"test", "test"}});
-            Action addFieldsPut = () => Put.fields(new Dictionary<string, object> {{"test", "test"}});
+            Action addFieldsPost = () => Post.fields(new Dictionary<string, object> { { "test", "test" } });
+            Action addFieldsDelete = () => Delete.fields(new Dictionary<string, object> { { "test", "test" } });
+            Action addFieldsPatch = () => Patch.fields(new Dictionary<string, object> { { "test", "test" } });
+            Action addFieldsPut = () => Put.fields(new Dictionary<string, object> { { "test", "test" } });
 
             addFieldPost.ShouldThrow<InvalidOperationException>();
             addFieldDelete.ShouldThrow<InvalidOperationException>();
@@ -588,5 +581,107 @@ namespace unicorn_net_tests.request
             addFieldsPatch.ShouldThrow<InvalidOperationException>();
             addFieldsPut.ShouldThrow<InvalidOperationException>();
         }
+
+
+
+        [Test]
+        public void HttpRequest_Should_Construct_With_Correct_URL_Query()
+        {
+            var Post = new HttpRequest(HttpMethod.Post, "http://localhost");
+            var Delete = new HttpRequest(HttpMethod.Delete, "http://localhost");
+            var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost");
+            var Put = new HttpRequest(HttpMethod.Put, "http://localhost");
+
+            Post.query("key", "value");
+            Delete.query("key", "value");
+            Patch.query("key", "value");
+            Put.query("key", "value");
+
+            Post.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value");
+            Delete.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value");
+            Patch.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value");
+            Put.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value");
+        }
+
+        [Test]
+        public void HttpRequest_Should_Construct_With_Correct_URL_Query_With_Existing_Parameters()
+        {
+            var Post = new HttpRequest(HttpMethod.Post, "http://localhost/?key=value");
+            var Delete = new HttpRequest(HttpMethod.Delete, "http://localhost/?key=value");
+            var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost/?key=value");
+            var Put = new HttpRequest(HttpMethod.Put, "http://localhost/?key=value");
+
+            Post.query("key2", "value2");
+            Delete.query("key2", "value2");
+            Patch.query("key2", "value2");
+            Put.query("key2", "value2");
+
+            Post.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Delete.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Patch.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Put.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+        }
+
+        [Test]
+        public void HttpRequest_Should_Construct_With_Correct_URL_Queries()
+        {
+            var Post = new HttpRequest(HttpMethod.Post, "http://localhost");
+            var Delete = new HttpRequest(HttpMethod.Delete, "http://localhost");
+            var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost");
+            var Put = new HttpRequest(HttpMethod.Put, "http://localhost");
+
+            Post.query("key", "value");
+            Post.query("key2", "value2");
+            Delete.query("key", "value");
+            Delete.query("key2", "value2");
+            Patch.query("key", "value");
+            Patch.query("key2", "value2");
+            Put.query("key", "value");
+            Put.query("key2", "value2");
+
+            Post.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Delete.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Patch.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+            Put.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2=value2");
+        }
+
+        [Test]
+        public void HttpRequest_Should_Construct_With_Correct_URL_Singular_Query()
+        {
+            var Post = new HttpRequest(HttpMethod.Post, "http://localhost");
+            var Delete = new HttpRequest(HttpMethod.Delete, "http://localhost");
+            var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost");
+            var Put = new HttpRequest(HttpMethod.Put, "http://localhost");
+
+            Post.query("key");
+            Delete.query("key");
+            Patch.query("key");
+            Put.query("key");
+
+            Post.URL.ToString().Should().BeEquivalentTo("http://localhost/?key");
+            Delete.URL.ToString().Should().BeEquivalentTo("http://localhost/?key");
+            Patch.URL.ToString().Should().BeEquivalentTo("http://localhost/?key");
+            Put.URL.ToString().Should().BeEquivalentTo("http://localhost/?key");
+        }
+
+        [Test]
+        public void HttpRequest_Should_Construct_With_Correct_URL_Singular_Query_With_Existing_Parameters()
+        {
+            var Post = new HttpRequest(HttpMethod.Post, "http://localhost/?key=value");
+            var Delete = new HttpRequest(HttpMethod.Delete, "http://localhost/?key=value");
+            var Patch = new HttpRequest(new HttpMethod("PATCH"), "http://localhost/?key=value");
+            var Put = new HttpRequest(HttpMethod.Put, "http://localhost/?key=value");
+
+            Post.query("key2");
+            Delete.query("key2");
+            Patch.query("key2");
+            Put.query("key2");
+
+            Post.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2");
+            Delete.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2");
+            Patch.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2");
+            Put.URL.ToString().Should().BeEquivalentTo("http://localhost/?key=value&key2");
+        }
+
     }
 }

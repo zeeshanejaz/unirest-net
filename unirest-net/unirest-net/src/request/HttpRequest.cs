@@ -207,6 +207,49 @@ namespace unirest_net.request
             return this;
         }
 
+        public HttpRequest query(string parameter, string value = null)
+        {
+            var url = new UriBuilder(this.URL);
+
+            var newQueryString = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { parameter, value }
+            }).ReadAsStringAsync().Result;
+
+            if (value == null)
+            {
+                newQueryString = newQueryString.Substring(0, newQueryString.Length - 1);
+            }
+
+            if (url.Query == "")
+            {
+                url.Query = newQueryString;
+            }
+            else
+            {
+                url.Query = string.Join("&", url.Query.Substring(1), newQueryString);
+            }
+
+            URL = url.Uri;
+
+            return this;
+        }
+
+        public HttpRequest queries(Dictionary<string, string> values)
+        {
+            if (values == null)
+            {
+                return this;
+            }
+
+            foreach (var value in values)
+            {
+                query(value.Key, value.Value);
+            }
+
+            return this;
+        }
+
         private bool isPrimitiveType(object obj)
         {
             if (obj == null)
