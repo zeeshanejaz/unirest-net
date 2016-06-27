@@ -3,10 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using System.Net;
 using unirest_net.http;
 
 namespace unirest_net.request
@@ -29,31 +29,35 @@ namespace unirest_net.request
 
         public MultipartFormDataContent Body { get; private set; }
 
-        // Should add overload that takes URL object
-        public HttpRequest(HttpMethod method, string url)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpRequest"/> class.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="url">The URL.</param>
+        public HttpRequest(HttpMethod method, string url) : this(method, CreateUriFromUrl(url))
         {
-            Uri locurl;
+        }
 
-            if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpRequest"/> class.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="uri">The URI.</param>
+        public HttpRequest(HttpMethod method, Uri uri)
+        {
+            if (uri == null)
             {
-                if (
-                    !(locurl.IsAbsoluteUri &&
-                      (locurl.Scheme == "http" || locurl.Scheme == "https")) ||
-                    !locurl.IsAbsoluteUri)
-                {
-                    throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
-                }
+                throw new ArgumentNullException(nameof(uri));
             }
-            else
+            if (!(uri.IsAbsoluteUri && (uri.Scheme == "http" || uri.Scheme == "https")) || !uri.IsAbsoluteUri)
             {
                 throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
             }
 
-            URL = locurl;
+            URL = uri;
             HttpMethod = method;
             Headers = new Dictionary<string, string>();
             Body = new MultipartFormDataContent();
-
         }
 
         public HttpRequest header(string name, object value)
@@ -203,6 +207,49 @@ namespace unirest_net.request
             return this;
         }
 
+        public HttpRequest query(string parameter, string value = null)
+        {
+            var url = new UriBuilder(this.URL);
+
+            var newQueryString = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { parameter, value }
+            }).ReadAsStringAsync().Result;
+
+            if (value == null)
+            {
+                newQueryString = newQueryString.Substring(0, newQueryString.Length - 1);
+            }
+
+            if (url.Query == "")
+            {
+                url.Query = newQueryString;
+            }
+            else
+            {
+                url.Query = string.Join("&", url.Query.Substring(1), newQueryString);
+            }
+
+            URL = url.Uri;
+
+            return this;
+        }
+
+        public HttpRequest queries(Dictionary<string, string> values)
+        {
+            if (values == null)
+            {
+                return this;
+            }
+
+            foreach (var value in values)
+            {
+                query(value.Key, value.Value);
+            }
+
+            return this;
+        }
+
         private bool isPrimitiveType(object obj)
         {
             if (obj == null)
@@ -290,9 +337,39 @@ namespace unirest_net.request
             return HttpClientHelper.Request<T>(this);
         }
 
+        public dynamic asJson()
+        {
+            var response = HttpClientHelper.Request<object>(this);
+
+            var serializer = new JsonSerializer();
+            using (var sr = new StreamReader(response.Raw))
+            {
+                using (var jsonTextReader = new JsonTextReader(sr))
+                {
+                    return serializer.Deserialize(jsonTextReader);
+                }
+            }
+        }
+
         public Task<HttpResponse<T>> asJsonAsync<T>()
         {
             return HttpClientHelper.RequestAsync<T>(this);
+        }
+
+        /// <summary>
+        /// Creates the URI from URL.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns>The URI or an exception.</returns>
+        private static Uri CreateUriFromUrl(string url)
+        {
+            Uri locurl;
+            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
+            {
+                throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
+            }
+
+            return locurl;
         }
     }
 }
