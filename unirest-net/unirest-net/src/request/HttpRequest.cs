@@ -49,6 +49,10 @@ namespace unirest_net.request
             {
                 throw new ArgumentNullException(nameof(uri));
             }
+            if (!(uri.IsAbsoluteUri && (uri.Scheme == "http" || uri.Scheme == "https")) || !uri.IsAbsoluteUri)
+            {
+                throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
+            }
 
             URL = uri;
             HttpMethod = method;
@@ -295,20 +299,15 @@ namespace unirest_net.request
             return HttpClientHelper.RequestAsync<T>(this);
         }
 
+        /// <summary>
+        /// Creates the URI from URL.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns>The URI or an exception.</returns>
         private static Uri CreateUriFromUrl(string url)
         {
             Uri locurl;
-            if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
-            {
-                if (
-                    !(locurl.IsAbsoluteUri &&
-                      (locurl.Scheme == "http" || locurl.Scheme == "https")) ||
-                    !locurl.IsAbsoluteUri)
-                {
-                    throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
-                }
-            }
-            else
+            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
             {
                 throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
             }
