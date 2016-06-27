@@ -29,31 +29,31 @@ namespace unirest_net.request
 
         public MultipartFormDataContent Body { get; private set; }
 
-        // Should add overload that takes URL object
-        public HttpRequest(HttpMethod method, string url)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpRequest"/> class.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="url">The URL.</param>
+        public HttpRequest(HttpMethod method, string url) : this(method, CreateUriFromUrl(url))
         {
-            Uri locurl;
+        }
 
-            if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpRequest"/> class.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="uri">The URI.</param>
+        public HttpRequest(HttpMethod method, Uri uri)
+        {
+            if (uri == null)
             {
-                if (
-                    !(locurl.IsAbsoluteUri &&
-                      (locurl.Scheme == "http" || locurl.Scheme == "https")) ||
-                    !locurl.IsAbsoluteUri)
-                {
-                    throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
-                }
-            }
-            else
-            {
-                throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
+                throw new ArgumentNullException(nameof(uri));
             }
 
-            URL = locurl;
+            URL = uri;
             HttpMethod = method;
             Headers = new Dictionary<string, string>();
             Body = new MultipartFormDataContent();
-
         }
 
         public HttpRequest header(string name, object value)
@@ -293,6 +293,27 @@ namespace unirest_net.request
         public Task<HttpResponse<T>> asJsonAsync<T>()
         {
             return HttpClientHelper.RequestAsync<T>(this);
+        }
+
+        private static Uri CreateUriFromUrl(string url)
+        {
+            Uri locurl;
+            if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out locurl))
+            {
+                if (
+                    !(locurl.IsAbsoluteUri &&
+                      (locurl.Scheme == "http" || locurl.Scheme == "https")) ||
+                    !locurl.IsAbsoluteUri)
+                {
+                    throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
+                }
+            }
+            else
+            {
+                throw new ArgumentException("The url passed to the HttpMethod constructor is not a valid HTTP/S URL");
+            }
+
+            return locurl;
         }
     }
 }
