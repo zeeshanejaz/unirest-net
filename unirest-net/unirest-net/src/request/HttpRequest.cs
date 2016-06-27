@@ -3,10 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using System.Net;
 using unirest_net.http;
 
 namespace unirest_net.request
@@ -335,6 +335,20 @@ namespace unirest_net.request
         public HttpResponse<T> asJson<T>()
         {
             return HttpClientHelper.Request<T>(this);
+        }
+
+        public dynamic asJson()
+        {
+            var response = HttpClientHelper.Request<object>(this);
+
+            var serializer = new JsonSerializer();
+            using (var sr = new StreamReader(response.Raw))
+            {
+                using (var jsonTextReader = new JsonTextReader(sr))
+                {
+                    return serializer.Deserialize(jsonTextReader);
+                }
+            }
         }
 
         public Task<HttpResponse<T>> asJsonAsync<T>()
